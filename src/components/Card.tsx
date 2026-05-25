@@ -7,11 +7,11 @@ const SUIT_COLOR: Record<Suit, string> = {
   bastos: "text-emerald-700",
 };
 
-const SUIT_LABEL: Record<Suit, string> = {
-  oros: "O",
-  copas: "C",
-  espadas: "E",
-  bastos: "B",
+export const SUIT_LABEL: Record<Suit, string> = {
+  oros: "🌞",
+  copas: "🍷",
+  espadas: "⚔️",
+  bastos: "🪵",
 };
 
 const RANK_LABEL: Record<Rank, string> = {
@@ -45,26 +45,45 @@ export function CardView({ card }: { card: Card }) {
       style={{ width: CARD_W, height: CARD_H }}
       className={`rounded-md bg-white border border-gray-300 shadow-md flex flex-col p-1 select-none ${color}`}
     >
-      <div className="text-sm font-bold leading-none">
-        {RANK_LABEL[card.rank]}
+      <div className="text-sm font-bold leading-none flex items-center gap-0.5">
+        <span>{RANK_LABEL[card.rank]}</span>
+        <span className="text-xs">{SUIT_LABEL[card.suit]}</span>
       </div>
       <div className="flex-1 flex items-center justify-center text-3xl font-bold">
         {SUIT_LABEL[card.suit]}
       </div>
-      <div className="text-sm font-bold leading-none self-end rotate-180">
-        {RANK_LABEL[card.rank]}
+      <div className="text-sm font-bold leading-none self-end rotate-180 flex items-center gap-0.5">
+        <span>{RANK_LABEL[card.rank]}</span>
+        <span className="text-xs">{SUIT_LABEL[card.suit]}</span>
       </div>
     </div>
   );
 }
 
-export function EmptySlot({ label }: { label?: string }) {
+export function EmptySlot({
+  label,
+  icon,
+}: {
+  label?: string;
+  icon?: string;
+}) {
   return (
     <div
       style={{ width: CARD_W, height: CARD_H }}
-      className="rounded-md border-2 border-dashed border-green-600/60 flex items-center justify-center text-green-200/60 text-xs uppercase tracking-wide"
+      className="rounded-md border-2 border-dashed border-green-600/60 flex items-center justify-center"
     >
-      {label ?? ""}
+      {icon ? (
+        <span
+          className="text-3xl opacity-30"
+          style={{ filter: "grayscale(1)" }}
+        >
+          {icon}
+        </span>
+      ) : (
+        <span className="text-green-200/60 text-xs uppercase tracking-wide">
+          {label ?? ""}
+        </span>
+      )}
     </div>
   );
 }

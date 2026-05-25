@@ -18,7 +18,7 @@ import {
   type MoveTarget,
   type Suit,
 } from "../game";
-import { CARD_H, CARD_W, CardView, EmptySlot } from "./Card";
+import { CARD_H, CARD_W, CardView, EmptySlot, SUIT_LABEL } from "./Card";
 
 const STACK_OFFSET = 26;
 
@@ -116,7 +116,7 @@ function Foundation({ suit, pile }: { suit: Suit; pile: Card[] }) {
       {top ? (
         <CardView card={top} />
       ) : (
-        <EmptySlot label={suit.slice(0, 1).toUpperCase()} />
+        <EmptySlot icon={SUIT_LABEL[suit]} />
       )}
     </DropTarget>
   );
