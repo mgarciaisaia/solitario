@@ -29,9 +29,11 @@ type Props = {
 function DraggableCard({
   card,
   source,
+  onDoubleClick,
 }: {
   card: Card;
   source: MoveSource;
+  onDoubleClick?: () => void;
 }) {
   const id = useMemo(() => JSON.stringify(source), [source]);
   const { attributes, listeners, setNodeRef, transform, isDragging } =
@@ -47,7 +49,13 @@ function DraggableCard({
     position: "relative",
   };
   return (
-    <div ref={setNodeRef} style={style} {...listeners} {...attributes}>
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...listeners}
+      {...attributes}
+      onDoubleClick={onDoubleClick}
+    >
       <CardView card={card} />
     </div>
   );
@@ -73,7 +81,15 @@ function DropTarget({
   );
 }
 
-function Column({ cards, col }: { cards: Card[]; col: number }) {
+function Column({
+  cards,
+  col,
+  onMove,
+}: {
+  cards: Card[];
+  col: number;
+  onMove: (move: Move) => void;
+}) {
   const lastIdx = cards.length - 1;
   const minHeight = CARD_H + Math.max(0, cards.length - 1) * STACK_OFFSET;
   return (
@@ -95,6 +111,13 @@ function Column({ cards, col }: { cards: Card[]; col: number }) {
                   <DraggableCard
                     card={card}
                     source={{ kind: "column", col }}
+                    onDoubleClick={() =>
+                      onMove({
+                        kind: "move",
+                        src: { kind: "column", col },
+                        tgt: { kind: "foundations" },
+                      })
+                    }
                   />
                 ) : (
                   <CardView card={card} />
@@ -129,10 +152,28 @@ function Foundations({
   );
 }
 
-function Waste({ waste }: { waste: Card[] }) {
+function Waste({
+  waste,
+  onMove,
+}: {
+  waste: Card[];
+  onMove: (move: Move) => void;
+}) {
   const top = waste[waste.length - 1];
   if (!top) return <EmptySlot label="—" />;
-  return <DraggableCard card={top} source={{ kind: "waste" }} />;
+  return (
+    <DraggableCard
+      card={top}
+      source={{ kind: "waste" }}
+      onDoubleClick={() =>
+        onMove({
+          kind: "move",
+          src: { kind: "waste" },
+          tgt: { kind: "foundations" },
+        })
+      }
+    />
+  );
 }
 
 function Stock({
@@ -180,13 +221,13 @@ export function Board({ state, onMove }: Props) {
               stock={state.stock}
               onDraw={() => onMove({ kind: "draw" })}
             />
-            <Waste waste={state.waste} />
+            <Waste waste={state.waste} onMove={onMove} />
           </div>
           <Foundations foundations={state.foundations} />
         </div>
         <div className="flex gap-6 justify-center">
           {state.columns.map((cards, col) => (
-            <Column key={col} cards={cards} col={col} />
+            <Column key={col} cards={cards} col={col} onMove={onMove} />
           ))}
         </div>
       </div>
