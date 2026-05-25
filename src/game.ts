@@ -268,3 +268,60 @@ export function formatMove(m: Move): string {
   if (m.kind === "draw") return "D";
   return formatSource(m.src) + formatTarget(m.tgt);
 }
+
+function parseSuit(c: string | undefined): Suit | null {
+  switch (c) {
+    case "o":
+      return "oros";
+    case "c":
+      return "copas";
+    case "e":
+      return "espadas";
+    case "b":
+      return "bastos";
+    default:
+      return null;
+  }
+}
+
+function parseColIndex(c: string | undefined): number | null {
+  if (!c) return null;
+  const n = c.charCodeAt(0) - "0".charCodeAt(0);
+  return n >= 0 && n <= 4 ? n : null;
+}
+
+function parseSource(s: string, i: number): [MoveSource, number] | null {
+  if (s[i] === "W") return [{ kind: "waste" }, i + 1];
+  if (s[i] === "c") {
+    const col = parseColIndex(s[i + 1]);
+    if (col === null) return null;
+    return [{ kind: "column", col }, i + 2];
+  }
+  return null;
+}
+
+function parseTarget(s: string, i: number): [MoveTarget, number] | null {
+  if (s[i] === "c") {
+    const col = parseColIndex(s[i + 1]);
+    if (col === null) return null;
+    return [{ kind: "column", col }, i + 2];
+  }
+  if (s[i] === "f") {
+    const suit = parseSuit(s[i + 1]);
+    if (suit) return [{ kind: "foundation", suit }, i + 2];
+    return [{ kind: "foundations" }, i + 1];
+  }
+  return null;
+}
+
+export function parseMove(s: string): Move | null {
+  if (s === "D") return { kind: "draw" };
+  const srcRes = parseSource(s, 0);
+  if (!srcRes) return null;
+  const [src, i] = srcRes;
+  const tgtRes = parseTarget(s, i);
+  if (!tgtRes) return null;
+  const [tgt, j] = tgtRes;
+  if (j !== s.length) return null;
+  return { kind: "move", src, tgt };
+}

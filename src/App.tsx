@@ -1,7 +1,8 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   applyMove,
   formatMove,
+  parseMove,
   randomSeed,
   replay,
   type Move,
@@ -10,11 +11,41 @@ import { Board } from "./components/Board";
 
 type History = { seed: number; moves: Move[] };
 
+function encodeHistory(h: History): string {
+  const seed = h.seed.toString(16).padStart(8, "0");
+  if (h.moves.length === 0) return `seed=${seed}`;
+  return `seed=${seed}&moves=${h.moves.map(formatMove).join(",")}`;
+}
+
+function decodeHistory(hash: string): History | null {
+  const params = new URLSearchParams(hash.replace(/^#/, ""));
+  const seedStr = params.get("seed");
+  if (!seedStr) return null;
+  const seed = parseInt(seedStr, 16);
+  if (!Number.isFinite(seed)) return null;
+  const movesStr = params.get("moves") ?? "";
+  const moves: Move[] = [];
+  if (movesStr) {
+    for (const m of movesStr.split(",")) {
+      const parsed = parseMove(m);
+      if (parsed) moves.push(parsed);
+    }
+  }
+  return { seed, moves };
+}
+
 export default function App() {
-  const [history, setHistory] = useState<History>(() => ({
-    seed: randomSeed(),
-    moves: [],
-  }));
+  const [history, setHistory] = useState<History>(() => {
+    const fromHash = decodeHistory(window.location.hash);
+    return fromHash ?? { seed: randomSeed(), moves: [] };
+  });
+
+  useEffect(() => {
+    const hash = "#" + encodeHistory(history);
+    if (window.location.hash !== hash) {
+      window.history.replaceState(null, "", hash);
+    }
+  }, [history]);
 
   const state = useMemo(
     () => replay(history.seed, history.moves),
