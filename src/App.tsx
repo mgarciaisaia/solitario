@@ -64,7 +64,12 @@ export default function App() {
     <main className="min-h-screen bg-green-800 text-white p-4">
       <div className="flex justify-between items-center mb-6 max-w-4xl mx-auto">
         <div className="flex items-baseline gap-3">
-          <h1 className="text-2xl font-semibold">Solitario</h1>
+          <div className="flex flex-col">
+            <h1 className="text-2xl font-semibold leading-tight">Solitario</h1>
+            <p className="text-xs text-green-200/80 italic">
+              Como lo jugaba mi abuela
+            </p>
+          </div>
           <span className="text-xs text-green-200/70 font-mono">
             #{history.seed.toString(16).padStart(8, "0")} ·{" "}
             {history.moves.length} movs
