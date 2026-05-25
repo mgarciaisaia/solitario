@@ -18,7 +18,7 @@ import {
   type MoveTarget,
   type Suit,
 } from "../game";
-import { CARD_H, CardView, EmptySlot } from "./Card";
+import { CARD_H, CARD_W, CardView, EmptySlot } from "./Card";
 
 const STACK_OFFSET = 26;
 
@@ -82,7 +82,7 @@ function Column({ cards, col }: { cards: Card[]; col: number }) {
       {cards.length === 0 ? (
         <EmptySlot />
       ) : (
-        <div className="relative" style={{ minHeight }}>
+        <div className="relative" style={{ minHeight, width: CARD_W }}>
           {cards.map((card, i) => {
             const top = i * STACK_OFFSET;
             const isTop = i === lastIdx;
@@ -186,7 +186,7 @@ export function Board({ state, setState }: Props) {
             ))}
           </div>
         </div>
-        <div className="flex gap-3 justify-center">
+        <div className="flex gap-6 justify-center">
           {state.columns.map((cards, col) => (
             <Column key={col} cards={cards} col={col} />
           ))}
