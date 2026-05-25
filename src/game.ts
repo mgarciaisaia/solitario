@@ -45,17 +45,33 @@ function makeDeck(): Card[] {
   return deck;
 }
 
-function shuffle<T>(arr: T[]): T[] {
+function mulberry32(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+export function randomSeed(): number {
+  return Math.floor(Math.random() * 0x100000000);
+}
+
+function shuffle<T>(arr: T[], rng: () => number): T[] {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = Math.floor(rng() * (i + 1));
     [a[i], a[j]] = [a[j], a[i]];
   }
   return a;
 }
 
-export function newGame(): GameState {
-  const deck = shuffle(makeDeck());
+export function newGame(seed: number): GameState {
+  const rng = mulberry32(seed);
+  const deck = shuffle(makeDeck(), rng);
   const columns: Card[][] = [[], [], [], [], []];
   for (let i = 0; i < 5; i++) {
     const faceDownCount = 4 - i;
@@ -199,4 +215,56 @@ export function drawFromStock(state: GameState): GameState {
   c.faceUp = true;
   next.waste.push(c);
   return next;
+}
+
+export type Move =
+  | { kind: "draw" }
+  | { kind: "move"; src: MoveSource; tgt: MoveTarget };
+
+export function applyMove(state: GameState, m: Move): GameState | null {
+  if (m.kind === "draw") {
+    if (state.stock.length === 0) return null;
+    return drawFromStock(state);
+  }
+  return tryMove(state, m.src, m.tgt);
+}
+
+export function replay(seed: number, moves: readonly Move[]): GameState {
+  let s = newGame(seed);
+  for (const m of moves) {
+    const next = applyMove(s, m);
+    if (next) s = next;
+  }
+  return s;
+}
+
+function suitChar(s: Suit): string {
+  return s[0];
+}
+
+function formatSource(s: MoveSource): string {
+  switch (s.kind) {
+    case "waste":
+      return "W";
+    case "column":
+      return `c${s.col}`;
+    case "foundation":
+      return `f${suitChar(s.suit)}`;
+  }
+}
+
+function formatTarget(t: MoveTarget): string {
+  switch (t.kind) {
+    case "column":
+      return `c${t.col}`;
+    case "foundation":
+      return `f${suitChar(t.suit)}`;
+    case "foundations":
+      return "f";
+  }
+}
+
+export function formatMove(m: Move): string {
+  if (m.kind === "draw") return "D";
+  return formatSource(m.src) + formatTarget(m.tgt);
 }

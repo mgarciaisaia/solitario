@@ -10,10 +10,9 @@ import {
 } from "@dnd-kit/core";
 import {
   SUITS,
-  drawFromStock,
-  tryMove,
   type Card,
   type GameState,
+  type Move,
   type MoveSource,
   type MoveTarget,
   type Suit,
@@ -24,7 +23,7 @@ const STACK_OFFSET = 26;
 
 type Props = {
   state: GameState;
-  setState: (s: GameState) => void;
+  onMove: (move: Move) => void;
 };
 
 function DraggableCard({
@@ -160,7 +159,7 @@ function Stock({
   );
 }
 
-export function Board({ state, setState }: Props) {
+export function Board({ state, onMove }: Props) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
   );
@@ -169,8 +168,7 @@ export function Board({ state, setState }: Props) {
     const src = event.active.data.current as MoveSource | undefined;
     const tgt = event.over?.data.current as MoveTarget | undefined;
     if (!src || !tgt) return;
-    const next = tryMove(state, src, tgt);
-    if (next) setState(next);
+    onMove({ kind: "move", src, tgt });
   }
 
   return (
@@ -180,7 +178,7 @@ export function Board({ state, setState }: Props) {
           <div className="flex gap-3">
             <Stock
               stock={state.stock}
-              onDraw={() => setState(drawFromStock(state))}
+              onDraw={() => onMove({ kind: "draw" })}
             />
             <Waste waste={state.waste} />
           </div>
