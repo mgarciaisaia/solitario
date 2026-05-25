@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   applyMove,
-  formatMove,
+  describeMove,
   formatMoves,
   parseMoves,
   randomSeed,
@@ -67,7 +67,7 @@ export default function App() {
           <span className="text-xs text-green-200/70 font-mono">
             #{history.seed.toString(16).padStart(8, "0")} ·{" "}
             {history.moves.length} movs
-            {lastMove && ` · ${formatMove(lastMove)}`}
+            {lastMove && ` · ${describeMove(lastMove)}`}
           </span>
         </div>
         <div className="flex gap-2">

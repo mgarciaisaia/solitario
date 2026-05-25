@@ -238,79 +238,100 @@ export function replay(seed: number, moves: readonly Move[]): GameState {
   return s;
 }
 
-function formatSource(s: MoveSource): string {
-  switch (s.kind) {
-    case "waste":
-      return "W";
-    case "column":
-      return `c${s.col}`;
-    case "foundation":
-      throw new Error("foundation source is not serializable");
-  }
+const COL_LETTERS = "abcde";
+
+function colLetter(n: number): string {
+  return COL_LETTERS[n];
 }
 
-function formatTarget(t: MoveTarget): string {
-  switch (t.kind) {
+function moveKey(m: Move): string {
+  if (m.kind === "draw") return "D";
+  let s: string;
+  switch (m.src.kind) {
+    case "waste":
+      s = "W";
+      break;
     case "column":
-      return `c${t.col}`;
+      s = colLetter(m.src.col);
+      break;
     case "foundation":
-    case "foundations":
-      return "f";
+      throw new Error("foundation source is not encodable");
   }
+  const t = m.tgt.kind === "column" ? colLetter(m.tgt.col) : "f";
+  return s + t;
 }
+
+export function describeMove(m: Move): string {
+  if (m.kind === "draw") return "Robar";
+  let s: string;
+  switch (m.src.kind) {
+    case "waste":
+      s = "Des";
+      break;
+    case "column":
+      s = `${m.src.col + 1}`;
+      break;
+    case "foundation":
+      throw new Error("foundation source is not describable");
+  }
+  const t = m.tgt.kind === "column" ? `${m.tgt.col + 1}` : "F";
+  return `${s}→${t}`;
+}
+
+function buildMoveTable(): Move[] {
+  const moves: Move[] = [{ kind: "draw" }];
+  for (let c = 0; c < 5; c++) {
+    moves.push({
+      kind: "move",
+      src: { kind: "waste" },
+      tgt: { kind: "column", col: c },
+    });
+  }
+  moves.push({
+    kind: "move",
+    src: { kind: "waste" },
+    tgt: { kind: "foundations" },
+  });
+  for (let i = 0; i < 5; i++) {
+    for (let j = 0; j < 5; j++) {
+      if (j === i) continue;
+      moves.push({
+        kind: "move",
+        src: { kind: "column", col: i },
+        tgt: { kind: "column", col: j },
+      });
+    }
+    moves.push({
+      kind: "move",
+      src: { kind: "column", col: i },
+      tgt: { kind: "foundations" },
+    });
+  }
+  return moves;
+}
+
+const MOVE_TABLE: readonly Move[] = buildMoveTable();
+const MOVE_ALPHABET = "abcdefghijklmnopqrstuvwxyz234567";
+const MOVE_INDEX: ReadonlyMap<string, number> = new Map(
+  MOVE_TABLE.map((m, i) => [moveKey(m), i]),
+);
 
 export function formatMove(m: Move): string {
-  if (m.kind === "draw") return "D";
-  return formatSource(m.src) + formatTarget(m.tgt);
+  const idx = MOVE_INDEX.get(moveKey(m));
+  if (idx === undefined) throw new Error("unencodable move");
+  return MOVE_ALPHABET[idx];
 }
 
 export function formatMoves(moves: readonly Move[]): string {
   return moves.map(formatMove).join("");
 }
 
-function parseColIndex(c: string | undefined): number | null {
-  if (!c) return null;
-  const n = c.charCodeAt(0) - "0".charCodeAt(0);
-  return n >= 0 && n <= 4 ? n : null;
-}
-
-function parseSource(s: string, i: number): [MoveSource, number] | null {
-  if (s[i] === "W") return [{ kind: "waste" }, i + 1];
-  if (s[i] === "c") {
-    const col = parseColIndex(s[i + 1]);
-    if (col === null) return null;
-    return [{ kind: "column", col }, i + 2];
-  }
-  return null;
-}
-
-function parseTarget(s: string, i: number): [MoveTarget, number] | null {
-  if (s[i] === "c") {
-    const col = parseColIndex(s[i + 1]);
-    if (col === null) return null;
-    return [{ kind: "column", col }, i + 2];
-  }
-  if (s[i] === "f") return [{ kind: "foundations" }, i + 1];
-  return null;
-}
-
-function parseOne(s: string, i: number): [Move, number] | null {
-  if (s[i] === "D") return [{ kind: "draw" }, i + 1];
-  const srcRes = parseSource(s, i);
-  if (!srcRes) return null;
-  const tgtRes = parseTarget(s, srcRes[1]);
-  if (!tgtRes) return null;
-  return [{ kind: "move", src: srcRes[0], tgt: tgtRes[0] }, tgtRes[1]];
-}
-
 export function parseMoves(s: string): Move[] {
   const out: Move[] = [];
-  let i = 0;
-  while (i < s.length) {
-    const res = parseOne(s, i);
-    if (!res) break;
-    out.push(res[0]);
-    i = res[1];
+  for (const ch of s) {
+    const idx = MOVE_ALPHABET.indexOf(ch);
+    if (idx < 0) break;
+    out.push(MOVE_TABLE[idx]);
   }
   return out;
 }
