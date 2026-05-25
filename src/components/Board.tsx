@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   DndContext,
   PointerSensor,
@@ -103,6 +103,28 @@ function DropTarget({
   );
 }
 
+function FaceDownCard({ card, top }: { card: Card; top: number }) {
+  const [peek, setPeek] = useState(false);
+  const stopPeek = () => setPeek(false);
+  return (
+    <div
+      className="absolute left-0"
+      style={{ top, zIndex: peek ? 10 : undefined }}
+      onContextMenu={(e) => e.preventDefault()}
+      onMouseDown={(e) => {
+        if (e.button === 2) {
+          e.preventDefault();
+          setPeek(true);
+        }
+      }}
+      onMouseUp={stopPeek}
+      onMouseLeave={stopPeek}
+    >
+      <CardView card={peek ? { ...card, faceUp: true } : card} />
+    </div>
+  );
+}
+
 function StackedCard({
   card,
   top,
@@ -180,15 +202,7 @@ function Column({
               );
             }
             if (!card.faceUp) {
-              return (
-                <div
-                  key={card.id}
-                  className="absolute left-0"
-                  style={{ top }}
-                >
-                  <CardView card={card} />
-                </div>
-              );
+              return <FaceDownCard key={card.id} card={card} top={top} />;
             }
             return (
               <StackedCard
