@@ -21,6 +21,21 @@ import {
 import { CARD_H, CARD_W, CardView, EmptySlot, SUIT_LABEL } from "./Card";
 
 const STACK_OFFSET = 26;
+const WASTE_FULL_COUNT = 5;
+const WASTE_COMPACT_OFFSET = STACK_OFFSET / 2;
+
+function wasteTops(n: number): number[] {
+  const tops: number[] = [];
+  let y = 0;
+  for (let i = 0; i < n; i++) {
+    tops.push(y);
+    if (i < n - 1) {
+      const nextIsFull = i + 1 >= n - WASTE_FULL_COUNT;
+      y += nextIsFull ? STACK_OFFSET : WASTE_COMPACT_OFFSET;
+    }
+  }
+  return tops;
+}
 
 type Props = {
   state: GameState;
@@ -189,30 +204,35 @@ function Waste({
   highlightSafe: boolean;
 }) {
   if (waste.length === 0) return <EmptySlot label="—" />;
-  const top = waste[waste.length - 1];
-  const under = waste[waste.length - 2];
+  const lastIdx = waste.length - 1;
+  const tops = wasteTops(waste.length);
+  const minHeight = CARD_H + tops[lastIdx];
   return (
-    <div className="relative" style={{ width: CARD_W, height: CARD_H }}>
-      {under && (
-        <div className="absolute top-0 left-0">
-          <CardView key={under.id} card={under} />
-        </div>
-      )}
-      <div className="absolute top-0 left-0">
-        <DraggableCard
-          key={top.id}
-          card={top}
-          source={{ kind: "waste" }}
-          highlight={highlightSafe && isSafe(foundations, top)}
-          onDoubleClick={() =>
-            onMove({
-              kind: "move",
-              src: { kind: "waste" },
-              tgt: { kind: "foundations" },
-            })
-          }
-        />
-      </div>
+    <div className="relative" style={{ minHeight, width: CARD_W }}>
+      {waste.map((card, i) => {
+        const top = tops[i];
+        const isTop = i === lastIdx;
+        return (
+          <div key={card.id} className="absolute left-0" style={{ top }}>
+            {isTop ? (
+              <DraggableCard
+                card={card}
+                source={{ kind: "waste" }}
+                highlight={highlightSafe && isSafe(foundations, card)}
+                onDoubleClick={() =>
+                  onMove({
+                    kind: "move",
+                    src: { kind: "waste" },
+                    tgt: { kind: "foundations" },
+                  })
+                }
+              />
+            ) : (
+              <CardView card={card} />
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -256,33 +276,35 @@ export function Board({ state, onMove, highlightSafe }: Props) {
 
   return (
     <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-      <div className="max-w-4xl mx-auto">
-        <div className="flex justify-between items-start mb-8">
-          <div className="flex gap-3">
-            <Stock
-              stock={state.stock}
-              onDraw={() => onMove({ kind: "draw" })}
-            />
-            <Waste
-              waste={state.waste}
-              onMove={onMove}
-              foundations={state.foundations}
-              highlightSafe={highlightSafe}
-            />
-          </div>
-          <Foundations foundations={state.foundations} />
+      <div className="max-w-4xl mx-auto flex gap-6 items-start">
+        <div className="flex flex-col gap-3 items-start">
+          <Stock
+            stock={state.stock}
+            onDraw={() => onMove({ kind: "draw" })}
+          />
+          <Waste
+            waste={state.waste}
+            onMove={onMove}
+            foundations={state.foundations}
+            highlightSafe={highlightSafe}
+          />
         </div>
-        <div className="flex gap-6 justify-center">
-          {state.columns.map((cards, col) => (
-            <Column
-              key={col}
-              cards={cards}
-              col={col}
-              onMove={onMove}
-              foundations={state.foundations}
-              highlightSafe={highlightSafe}
-            />
-          ))}
+        <div className="flex-1 flex flex-col gap-8">
+          <div className="flex justify-end">
+            <Foundations foundations={state.foundations} />
+          </div>
+          <div className="flex gap-6 justify-center items-start">
+            {state.columns.map((cards, col) => (
+              <Column
+                key={col}
+                cards={cards}
+                col={col}
+                onMove={onMove}
+                foundations={state.foundations}
+                highlightSafe={highlightSafe}
+              />
+            ))}
+          </div>
         </div>
       </div>
     </DndContext>
