@@ -238,10 +238,6 @@ export function replay(seed: number, moves: readonly Move[]): GameState {
   return s;
 }
 
-function suitChar(s: Suit): string {
-  return s[0];
-}
-
 function formatSource(s: MoveSource): string {
   switch (s.kind) {
     case "waste":
@@ -249,7 +245,7 @@ function formatSource(s: MoveSource): string {
     case "column":
       return `c${s.col}`;
     case "foundation":
-      return `f${suitChar(s.suit)}`;
+      throw new Error("foundation source is not serializable");
   }
 }
 
@@ -258,7 +254,6 @@ function formatTarget(t: MoveTarget): string {
     case "column":
       return `c${t.col}`;
     case "foundation":
-      return `f${suitChar(t.suit)}`;
     case "foundations":
       return "f";
   }
@@ -269,19 +264,8 @@ export function formatMove(m: Move): string {
   return formatSource(m.src) + formatTarget(m.tgt);
 }
 
-function parseSuit(c: string | undefined): Suit | null {
-  switch (c) {
-    case "o":
-      return "oros";
-    case "c":
-      return "copas";
-    case "e":
-      return "espadas";
-    case "b":
-      return "bastos";
-    default:
-      return null;
-  }
+export function formatMoves(moves: readonly Move[]): string {
+  return moves.map(formatMove).join("");
 }
 
 function parseColIndex(c: string | undefined): number | null {
@@ -306,22 +290,27 @@ function parseTarget(s: string, i: number): [MoveTarget, number] | null {
     if (col === null) return null;
     return [{ kind: "column", col }, i + 2];
   }
-  if (s[i] === "f") {
-    const suit = parseSuit(s[i + 1]);
-    if (suit) return [{ kind: "foundation", suit }, i + 2];
-    return [{ kind: "foundations" }, i + 1];
-  }
+  if (s[i] === "f") return [{ kind: "foundations" }, i + 1];
   return null;
 }
 
-export function parseMove(s: string): Move | null {
-  if (s === "D") return { kind: "draw" };
-  const srcRes = parseSource(s, 0);
+function parseOne(s: string, i: number): [Move, number] | null {
+  if (s[i] === "D") return [{ kind: "draw" }, i + 1];
+  const srcRes = parseSource(s, i);
   if (!srcRes) return null;
-  const [src, i] = srcRes;
-  const tgtRes = parseTarget(s, i);
+  const tgtRes = parseTarget(s, srcRes[1]);
   if (!tgtRes) return null;
-  const [tgt, j] = tgtRes;
-  if (j !== s.length) return null;
-  return { kind: "move", src, tgt };
+  return [{ kind: "move", src: srcRes[0], tgt: tgtRes[0] }, tgtRes[1]];
+}
+
+export function parseMoves(s: string): Move[] {
+  const out: Move[] = [];
+  let i = 0;
+  while (i < s.length) {
+    const res = parseOne(s, i);
+    if (!res) break;
+    out.push(res[0]);
+    i = res[1];
+  }
+  return out;
 }

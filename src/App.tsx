@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import {
   applyMove,
   formatMove,
-  parseMove,
+  formatMoves,
+  parseMoves,
   randomSeed,
   replay,
   type Move,
@@ -14,7 +15,7 @@ type History = { seed: number; moves: Move[] };
 function encodeHistory(h: History): string {
   const seed = h.seed.toString(16).padStart(8, "0");
   if (h.moves.length === 0) return `seed=${seed}`;
-  return `seed=${seed}&moves=${h.moves.map(formatMove).join(",")}`;
+  return `seed=${seed}&moves=${formatMoves(h.moves)}`;
 }
 
 function decodeHistory(hash: string): History | null {
@@ -24,14 +25,7 @@ function decodeHistory(hash: string): History | null {
   const seed = parseInt(seedStr, 16);
   if (!Number.isFinite(seed)) return null;
   const movesStr = params.get("moves") ?? "";
-  const moves: Move[] = [];
-  if (movesStr) {
-    for (const m of movesStr.split(",")) {
-      const parsed = parseMove(m);
-      if (parsed) moves.push(parsed);
-    }
-  }
-  return { seed, moves };
+  return { seed, moves: parseMoves(movesStr) };
 }
 
 export default function App() {
