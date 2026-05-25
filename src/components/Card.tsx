@@ -1,4 +1,7 @@
+import { motion } from "framer-motion";
 import type { Card, Rank, Suit } from "../game";
+
+const CARD_TRANSITION = { type: "spring", stiffness: 500, damping: 38 } as const;
 
 const SUIT_COLOR: Record<Suit, string> = {
   oros: "text-amber-500",
@@ -30,10 +33,19 @@ const RANK_LABEL: Record<Rank, string> = {
 export const CARD_W = 70;
 export const CARD_H = 100;
 
-export function CardView({ card }: { card: Card }) {
+export function CardView({
+  card,
+  dragging = false,
+}: {
+  card: Card;
+  dragging?: boolean;
+}) {
+  const transition = dragging ? { duration: 0 } : CARD_TRANSITION;
   if (!card.faceUp) {
     return (
-      <div
+      <motion.div
+        layoutId={card.id}
+        transition={transition}
         style={{ width: CARD_W, height: CARD_H }}
         className="rounded-md bg-blue-900 border-2 border-blue-700 shadow-md"
       />
@@ -41,7 +53,9 @@ export function CardView({ card }: { card: Card }) {
   }
   const color = SUIT_COLOR[card.suit];
   return (
-    <div
+    <motion.div
+      layoutId={card.id}
+      transition={transition}
       style={{ width: CARD_W, height: CARD_H }}
       className={`rounded-md bg-white border border-gray-300 shadow-md flex flex-col p-1 select-none ${color}`}
     >
@@ -56,7 +70,7 @@ export function CardView({ card }: { card: Card }) {
         <span>{RANK_LABEL[card.rank]}</span>
         <span className="text-xs">{SUIT_LABEL[card.suit]}</span>
       </div>
-    </div>
+    </motion.div>
   );
 }
 

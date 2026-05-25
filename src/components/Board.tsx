@@ -63,7 +63,7 @@ function DraggableCard({
       {...attributes}
       onDoubleClick={onDoubleClick}
     >
-      <CardView card={card} />
+      <CardView card={card} dragging={isDragging} />
     </div>
   );
 }
@@ -144,8 +144,21 @@ function Column({
 }
 
 function FoundationPile({ suit, pile }: { suit: Suit; pile: Card[] }) {
+  if (pile.length === 0) return <EmptySlot icon={SUIT_LABEL[suit]} />;
   const top = pile[pile.length - 1];
-  return top ? <CardView card={top} /> : <EmptySlot icon={SUIT_LABEL[suit]} />;
+  const under = pile[pile.length - 2];
+  return (
+    <div className="relative" style={{ width: CARD_W, height: CARD_H }}>
+      {under && (
+        <div className="absolute top-0 left-0">
+          <CardView key={under.id} card={under} />
+        </div>
+      )}
+      <div className="absolute top-0 left-0">
+        <CardView key={top.id} card={top} />
+      </div>
+    </div>
+  );
 }
 
 function Foundations({
@@ -175,21 +188,32 @@ function Waste({
   foundations: Record<Suit, Card[]>;
   highlightSafe: boolean;
 }) {
+  if (waste.length === 0) return <EmptySlot label="—" />;
   const top = waste[waste.length - 1];
-  if (!top) return <EmptySlot label="—" />;
+  const under = waste[waste.length - 2];
   return (
-    <DraggableCard
-      card={top}
-      source={{ kind: "waste" }}
-      highlight={highlightSafe && isSafe(foundations, top)}
-      onDoubleClick={() =>
-        onMove({
-          kind: "move",
-          src: { kind: "waste" },
-          tgt: { kind: "foundations" },
-        })
-      }
-    />
+    <div className="relative" style={{ width: CARD_W, height: CARD_H }}>
+      {under && (
+        <div className="absolute top-0 left-0">
+          <CardView key={under.id} card={under} />
+        </div>
+      )}
+      <div className="absolute top-0 left-0">
+        <DraggableCard
+          key={top.id}
+          card={top}
+          source={{ kind: "waste" }}
+          highlight={highlightSafe && isSafe(foundations, top)}
+          onDoubleClick={() =>
+            onMove({
+              kind: "move",
+              src: { kind: "waste" },
+              tgt: { kind: "foundations" },
+            })
+          }
+        />
+      </div>
+    </div>
   );
 }
 
@@ -207,9 +231,10 @@ function Stock({
       </div>
     );
   }
+  const top = stock[stock.length - 1];
   return (
     <div onClick={onDraw} className="cursor-pointer relative">
-      <CardView card={{ ...stock[stock.length - 1], faceUp: false }} />
+      <CardView key={top.id} card={{ ...top, faceUp: false }} />
       <div className="absolute bottom-1 right-1 text-xs text-white/80 bg-black/40 rounded px-1">
         {stock.length}
       </div>
