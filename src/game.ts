@@ -171,6 +171,19 @@ function checkWin(s: GameState): boolean {
   return SUITS.every((suit) => s.foundations[suit].length === RANKS.length);
 }
 
+export function isSafe(
+  foundations: Record<Suit, Card[]>,
+  card: Card,
+): boolean {
+  const k = rankIndex(card.rank);
+  if (foundations[card.suit].length !== k) return false;
+  for (const s of SUITS) {
+    if (s === card.suit) continue;
+    if (foundations[s].length < k - 1) return false;
+  }
+  return true;
+}
+
 export function tryMove(
   state: GameState,
   src: MoveSource,

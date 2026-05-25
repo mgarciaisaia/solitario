@@ -10,6 +10,7 @@ import {
 } from "@dnd-kit/core";
 import {
   SUITS,
+  isSafe,
   type Card,
   type GameState,
   type Move,
@@ -24,16 +25,19 @@ const STACK_OFFSET = 26;
 type Props = {
   state: GameState;
   onMove: (move: Move) => void;
+  highlightSafe: boolean;
 };
 
 function DraggableCard({
   card,
   source,
   onDoubleClick,
+  highlight,
 }: {
   card: Card;
   source: MoveSource;
   onDoubleClick?: () => void;
+  highlight?: boolean;
 }) {
   const id = useMemo(() => JSON.stringify(source), [source]);
   const { attributes, listeners, setNodeRef, transform, isDragging } =
@@ -52,6 +56,9 @@ function DraggableCard({
     <div
       ref={setNodeRef}
       style={style}
+      className={
+        highlight ? "rounded-md ring-2 ring-yellow-300 shadow-yellow-300/40" : ""
+      }
       {...listeners}
       {...attributes}
       onDoubleClick={onDoubleClick}
@@ -85,10 +92,14 @@ function Column({
   cards,
   col,
   onMove,
+  foundations,
+  highlightSafe,
 }: {
   cards: Card[];
   col: number;
   onMove: (move: Move) => void;
+  foundations: Record<Suit, Card[]>;
+  highlightSafe: boolean;
 }) {
   const lastIdx = cards.length - 1;
   const minHeight = CARD_H + Math.max(0, cards.length - 1) * STACK_OFFSET;
@@ -111,6 +122,7 @@ function Column({
                   <DraggableCard
                     card={card}
                     source={{ kind: "column", col }}
+                    highlight={highlightSafe && isSafe(foundations, card)}
                     onDoubleClick={() =>
                       onMove({
                         kind: "move",
@@ -155,9 +167,13 @@ function Foundations({
 function Waste({
   waste,
   onMove,
+  foundations,
+  highlightSafe,
 }: {
   waste: Card[];
   onMove: (move: Move) => void;
+  foundations: Record<Suit, Card[]>;
+  highlightSafe: boolean;
 }) {
   const top = waste[waste.length - 1];
   if (!top) return <EmptySlot label="—" />;
@@ -165,6 +181,7 @@ function Waste({
     <DraggableCard
       card={top}
       source={{ kind: "waste" }}
+      highlight={highlightSafe && isSafe(foundations, top)}
       onDoubleClick={() =>
         onMove({
           kind: "move",
@@ -200,7 +217,7 @@ function Stock({
   );
 }
 
-export function Board({ state, onMove }: Props) {
+export function Board({ state, onMove, highlightSafe }: Props) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
   );
@@ -215,19 +232,31 @@ export function Board({ state, onMove }: Props) {
   return (
     <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
       <div className="max-w-4xl mx-auto">
-        <div className="flex justify-between mb-8">
+        <div className="flex justify-between items-start mb-8">
           <div className="flex gap-3">
             <Stock
               stock={state.stock}
               onDraw={() => onMove({ kind: "draw" })}
             />
-            <Waste waste={state.waste} onMove={onMove} />
+            <Waste
+              waste={state.waste}
+              onMove={onMove}
+              foundations={state.foundations}
+              highlightSafe={highlightSafe}
+            />
           </div>
           <Foundations foundations={state.foundations} />
         </div>
         <div className="flex gap-6 justify-center">
           {state.columns.map((cards, col) => (
-            <Column key={col} cards={cards} col={col} onMove={onMove} />
+            <Column
+              key={col}
+              cards={cards}
+              col={col}
+              onMove={onMove}
+              foundations={state.foundations}
+              highlightSafe={highlightSafe}
+            />
           ))}
         </div>
       </div>

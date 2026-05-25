@@ -33,6 +33,7 @@ export default function App() {
     const fromHash = decodeHistory(window.location.hash);
     return fromHash ?? { seed: randomSeed(), moves: [] };
   });
+  const [highlightSafe, setHighlightSafe] = useState(false);
 
   useEffect(() => {
     const hash = "#" + encodeHistory(history);
@@ -70,7 +71,15 @@ export default function App() {
             {lastMove && ` · ${describeMove(lastMove)}`}
           </span>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-3 items-center">
+          <label className="flex items-center gap-1 text-sm select-none cursor-pointer">
+            <input
+              type="checkbox"
+              checked={highlightSafe}
+              onChange={(e) => setHighlightSafe(e.target.checked)}
+            />
+            Resaltar seguras
+          </label>
           <button
             onClick={onUndo}
             disabled={history.moves.length === 0}
@@ -86,7 +95,7 @@ export default function App() {
           </button>
         </div>
       </div>
-      <Board state={state} onMove={onMove} />
+      <Board state={state} onMove={onMove} highlightSafe={highlightSafe} />
       {state.won && (
         <div className="text-center mt-6 text-3xl font-bold">¡Ganaste!</div>
       )}
