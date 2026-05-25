@@ -114,7 +114,7 @@ function Foundation({ suit, pile }: { suit: Suit; pile: Card[] }) {
   return (
     <DropTarget id={`found-${suit}`} target={{ kind: "foundation", suit }}>
       {top ? (
-        <DraggableCard card={top} source={{ kind: "foundation", suit }} />
+        <CardView card={top} />
       ) : (
         <EmptySlot label={suit.slice(0, 1).toUpperCase()} />
       )}

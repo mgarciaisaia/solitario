@@ -163,12 +163,7 @@ export function tryMove(
   if (!card) return null;
   if (src.kind === "column" && tgt.kind === "column" && src.col === tgt.col)
     return null;
-  if (
-    src.kind === "foundation" &&
-    tgt.kind === "foundation" &&
-    src.suit === tgt.suit
-  )
-    return null;
+  if (src.kind === "foundation") return null;
 
   if (tgt.kind === "column") {
     const colTop =
