@@ -32,7 +32,8 @@ export type MoveSource =
 
 export type MoveTarget =
   | { kind: "column"; col: number }
-  | { kind: "foundation"; suit: Suit };
+  | { kind: "foundation"; suit: Suit }
+  | { kind: "foundations" };
 
 function makeDeck(): Card[] {
   const deck: Card[] = [];
@@ -165,21 +166,27 @@ export function tryMove(
     return null;
   if (src.kind === "foundation") return null;
 
-  if (tgt.kind === "column") {
+  const resolved: MoveTarget =
+    tgt.kind === "foundations"
+      ? { kind: "foundation", suit: card.suit }
+      : tgt;
+
+  if (resolved.kind === "column") {
     const colTop =
-      state.columns[tgt.col][state.columns[tgt.col].length - 1];
+      state.columns[resolved.col][state.columns[resolved.col].length - 1];
     if (!canPlaceOnColumn(card, colTop)) return null;
   } else {
-    if (!canPlaceOnFoundation(card, state.foundations[tgt.suit])) return null;
+    if (!canPlaceOnFoundation(card, state.foundations[resolved.suit]))
+      return null;
   }
 
   const next = cloneState(state);
   const carried = getSourceCard(next, src)!;
   removeSourceCard(next, src);
-  if (tgt.kind === "column") {
-    next.columns[tgt.col].push(carried);
+  if (resolved.kind === "column") {
+    next.columns[resolved.col].push(carried);
   } else {
-    next.foundations[tgt.suit].push(carried);
+    next.foundations[resolved.suit].push(carried);
   }
   next.won = checkWin(next);
   return next;

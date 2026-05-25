@@ -109,15 +109,23 @@ function Column({ cards, col }: { cards: Card[]; col: number }) {
   );
 }
 
-function Foundation({ suit, pile }: { suit: Suit; pile: Card[] }) {
+function FoundationPile({ suit, pile }: { suit: Suit; pile: Card[] }) {
   const top = pile[pile.length - 1];
+  return top ? <CardView card={top} /> : <EmptySlot icon={SUIT_LABEL[suit]} />;
+}
+
+function Foundations({
+  foundations,
+}: {
+  foundations: Record<Suit, Card[]>;
+}) {
   return (
-    <DropTarget id={`found-${suit}`} target={{ kind: "foundation", suit }}>
-      {top ? (
-        <CardView card={top} />
-      ) : (
-        <EmptySlot icon={SUIT_LABEL[suit]} />
-      )}
+    <DropTarget id="foundations" target={{ kind: "foundations" }}>
+      <div className="flex gap-3 p-1 rounded-md">
+        {SUITS.map((suit) => (
+          <FoundationPile key={suit} suit={suit} pile={foundations[suit]} />
+        ))}
+      </div>
     </DropTarget>
   );
 }
@@ -176,15 +184,7 @@ export function Board({ state, setState }: Props) {
             />
             <Waste waste={state.waste} />
           </div>
-          <div className="flex gap-3">
-            {SUITS.map((suit) => (
-              <Foundation
-                key={suit}
-                suit={suit}
-                pile={state.foundations[suit]}
-              />
-            ))}
-          </div>
+          <Foundations foundations={state.foundations} />
         </div>
         <div className="flex gap-6 justify-center">
           {state.columns.map((cards, col) => (
