@@ -103,6 +103,30 @@ function DropTarget({
   );
 }
 
+function StackedCard({
+  card,
+  top,
+  stripHeight,
+}: {
+  card: Card;
+  top: number;
+  stripHeight: number;
+}) {
+  return (
+    <div
+      className="absolute left-0 hover:z-10"
+      style={{ top, width: CARD_W, height: stripHeight }}
+    >
+      <div
+        className="absolute top-0 left-0"
+        style={{ pointerEvents: "none" }}
+      >
+        <CardView card={card} />
+      </div>
+    </div>
+  );
+}
+
 function Column({
   cards,
   col,
@@ -127,29 +151,52 @@ function Column({
           {cards.map((card, i) => {
             const top = i * STACK_OFFSET;
             const isTop = i === lastIdx;
-            return (
-              <div
-                key={card.id}
-                className="absolute left-0"
-                style={{ top }}
-              >
-                {isTop && card.faceUp ? (
-                  <DraggableCard
-                    card={card}
-                    source={{ kind: "column", col }}
-                    highlight={highlightSafe && isSafe(foundations, card)}
-                    onDoubleClick={() =>
-                      onMove({
-                        kind: "move",
-                        src: { kind: "column", col },
-                        tgt: { kind: "foundations" },
-                      })
-                    }
-                  />
-                ) : (
+            if (isTop) {
+              return (
+                <div
+                  key={card.id}
+                  className="absolute left-0"
+                  style={{ top }}
+                >
+                  {card.faceUp ? (
+                    <DraggableCard
+                      card={card}
+                      source={{ kind: "column", col }}
+                      highlight={
+                        highlightSafe && isSafe(foundations, card)
+                      }
+                      onDoubleClick={() =>
+                        onMove({
+                          kind: "move",
+                          src: { kind: "column", col },
+                          tgt: { kind: "foundations" },
+                        })
+                      }
+                    />
+                  ) : (
+                    <CardView card={card} />
+                  )}
+                </div>
+              );
+            }
+            if (!card.faceUp) {
+              return (
+                <div
+                  key={card.id}
+                  className="absolute left-0"
+                  style={{ top }}
+                >
                   <CardView card={card} />
-                )}
-              </div>
+                </div>
+              );
+            }
+            return (
+              <StackedCard
+                key={card.id}
+                card={card}
+                top={top}
+                stripHeight={STACK_OFFSET}
+              />
             );
           })}
         </div>
@@ -212,9 +259,9 @@ function Waste({
       {waste.map((card, i) => {
         const top = tops[i];
         const isTop = i === lastIdx;
-        return (
-          <div key={card.id} className="absolute left-0" style={{ top }}>
-            {isTop ? (
+        if (isTop) {
+          return (
+            <div key={card.id} className="absolute left-0" style={{ top }}>
               <DraggableCard
                 card={card}
                 source={{ kind: "waste" }}
@@ -227,10 +274,16 @@ function Waste({
                   })
                 }
               />
-            ) : (
-              <CardView card={card} />
-            )}
-          </div>
+            </div>
+          );
+        }
+        return (
+          <StackedCard
+            key={card.id}
+            card={card}
+            top={top}
+            stripHeight={tops[i + 1] - tops[i]}
+          />
         );
       })}
     </div>
