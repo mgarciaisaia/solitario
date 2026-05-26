@@ -20,21 +20,37 @@ import {
 } from "../game";
 import { CARD_H, CARD_W, CardView, EmptySlot, SUIT_LABEL } from "./Card";
 
-const STACK_OFFSET = 26;
+const STACK_OFFSET = "var(--stack-offset)";
+const WASTE_COMPACT_OFFSET = "var(--waste-compact-offset)";
 const WASTE_FULL_COUNT = 5;
-const WASTE_COMPACT_OFFSET = STACK_OFFSET / 2;
 
-function wasteTops(n: number): number[] {
-  const tops: number[] = [];
-  let y = 0;
+function offsetsToCalc(fullSteps: number, compactSteps: number): string {
+  if (fullSteps === 0 && compactSteps === 0) return "0px";
+  return `calc(${fullSteps} * ${STACK_OFFSET} + ${compactSteps} * ${WASTE_COMPACT_OFFSET})`;
+}
+
+type WasteLayout = {
+  positions: string[];
+  stripHeights: string[];
+  totalHeight: string;
+};
+
+function wasteLayout(n: number): WasteLayout {
+  const positions: string[] = [];
+  const stripHeights: string[] = [];
+  let fullSteps = 0;
+  let compactSteps = 0;
   for (let i = 0; i < n; i++) {
-    tops.push(y);
+    positions.push(offsetsToCalc(fullSteps, compactSteps));
     if (i < n - 1) {
       const nextIsFull = i + 1 >= n - WASTE_FULL_COUNT;
-      y += nextIsFull ? STACK_OFFSET : WASTE_COMPACT_OFFSET;
+      stripHeights.push(nextIsFull ? STACK_OFFSET : WASTE_COMPACT_OFFSET);
+      if (nextIsFull) fullSteps++;
+      else compactSteps++;
     }
   }
-  return tops;
+  const totalHeight = `calc(${offsetsToCalc(fullSteps, compactSteps)} + var(--card-h))`;
+  return { positions, stripHeights, totalHeight };
 }
 
 type Props = {
@@ -103,7 +119,7 @@ function DropTarget({
   );
 }
 
-function FaceDownCard({ card, top }: { card: Card; top: number }) {
+function FaceDownCard({ card, top }: { card: Card; top: string }) {
   const [peek, setPeek] = useState(false);
   const stopPeek = () => setPeek(false);
   return (
@@ -131,8 +147,8 @@ function StackedCard({
   stripHeight,
 }: {
   card: Card;
-  top: number;
-  stripHeight: number;
+  top: string;
+  stripHeight: string;
 }) {
   return (
     <div
@@ -163,7 +179,7 @@ function Column({
   highlightSafe: boolean;
 }) {
   const lastIdx = cards.length - 1;
-  const minHeight = CARD_H + Math.max(0, cards.length - 1) * STACK_OFFSET;
+  const minHeight = `calc(${CARD_H} + ${Math.max(0, cards.length - 1)} * ${STACK_OFFSET})`;
   return (
     <DropTarget id={`col-${col}`} target={{ kind: "column", col }}>
       {cards.length === 0 ? (
@@ -171,7 +187,7 @@ function Column({
       ) : (
         <div className="relative" style={{ minHeight, width: CARD_W }}>
           {cards.map((card, i) => {
-            const top = i * STACK_OFFSET;
+            const top = i === 0 ? "0px" : `calc(${i} * ${STACK_OFFSET})`;
             const isTop = i === lastIdx;
             if (isTop) {
               return (
@@ -244,7 +260,7 @@ function Foundations({
 }) {
   return (
     <DropTarget id="foundations" target={{ kind: "foundations" }}>
-      <div className="flex gap-3 p-1 rounded-md">
+      <div className="flex gap-1 sm:gap-3">
         {SUITS.map((suit) => (
           <FoundationPile key={suit} suit={suit} pile={foundations[suit]} />
         ))}
@@ -266,12 +282,14 @@ function Waste({
 }) {
   if (waste.length === 0) return <EmptySlot label="—" />;
   const lastIdx = waste.length - 1;
-  const tops = wasteTops(waste.length);
-  const minHeight = CARD_H + tops[lastIdx];
+  const { positions, stripHeights, totalHeight } = wasteLayout(waste.length);
   return (
-    <div className="relative" style={{ minHeight, width: CARD_W }}>
+    <div
+      className="relative"
+      style={{ minHeight: totalHeight, width: CARD_W }}
+    >
       {waste.map((card, i) => {
-        const top = tops[i];
+        const top = positions[i];
         const isTop = i === lastIdx;
         if (isTop) {
           return (
@@ -296,7 +314,7 @@ function Waste({
             key={card.id}
             card={card}
             top={top}
-            stripHeight={tops[i + 1] - tops[i]}
+            stripHeight={stripHeights[i]}
           />
         );
       })}
@@ -343,34 +361,40 @@ export function Board({ state, onMove, highlightSafe }: Props) {
 
   return (
     <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-      <div className="max-w-4xl mx-auto flex gap-6 items-start">
-        <div className="flex flex-col gap-3 items-start">
-          <Stock
-            stock={state.stock}
-            onDraw={() => onMove({ kind: "draw" })}
-          />
-          <Waste
-            waste={state.waste}
-            onMove={onMove}
-            foundations={state.foundations}
-            highlightSafe={highlightSafe}
-          />
+      <div className="flex-1 min-h-0 max-w-4xl mx-auto w-full relative overflow-hidden">
+        <div
+          className="absolute left-0 flex gap-3 sm:gap-6 items-start"
+          style={{
+            bottom: "calc(var(--card-h) + 8px)",
+            minHeight: "calc(var(--card-h) + 12 * var(--stack-offset))",
+          }}
+        >
+          {state.columns.map((cards, col) => (
+            <Column
+              key={col}
+              cards={cards}
+              col={col}
+              onMove={onMove}
+              foundations={state.foundations}
+              highlightSafe={highlightSafe}
+            />
+          ))}
         </div>
-        <div className="flex-1 flex flex-col gap-8">
-          <div className="flex justify-end">
+        <div className="absolute bottom-0 left-0 right-0 flex justify-between items-end gap-2 pointer-events-none">
+          <div className="pointer-events-auto">
             <Foundations foundations={state.foundations} />
           </div>
-          <div className="flex gap-6 justify-center items-start">
-            {state.columns.map((cards, col) => (
-              <Column
-                key={col}
-                cards={cards}
-                col={col}
-                onMove={onMove}
-                foundations={state.foundations}
-                highlightSafe={highlightSafe}
-              />
-            ))}
+          <div className="flex gap-1 sm:gap-3 items-end pointer-events-auto">
+            <Stock
+              stock={state.stock}
+              onDraw={() => onMove({ kind: "draw" })}
+            />
+            <Waste
+              waste={state.waste}
+              onMove={onMove}
+              foundations={state.foundations}
+              highlightSafe={highlightSafe}
+            />
           </div>
         </div>
       </div>

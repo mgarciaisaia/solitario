@@ -30,8 +30,8 @@ const RANK_LABEL: Record<Rank, string> = {
   12: "12",
 };
 
-export const CARD_W = 70;
-export const CARD_H = 100;
+export const CARD_W = "var(--card-w)";
+export const CARD_H = "var(--card-h)";
 
 export function CardView({
   card,

@@ -2,6 +2,22 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --card-w: 56px;
+  --card-h: 80px;
+  --stack-offset: 20px;
+  --waste-compact-offset: 10px;
+}
+
+@media (min-width: 640px) {
+  :root {
+    --card-w: 70px;
+    --card-h: 100px;
+    --stack-offset: 26px;
+    --waste-compact-offset: 13px;
+  }
+}
+
 html,
 body,
 #root {
@@ -10,4 +26,5 @@ body,
 
 body {
   margin: 0;
+  overscroll-behavior: none;
 }

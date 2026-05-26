@@ -61,42 +61,45 @@ export default function App() {
   const lastMove = history.moves[history.moves.length - 1];
 
   return (
-    <main className="min-h-screen bg-green-800 text-white p-4">
-      <div className="flex justify-between items-center mb-6 max-w-4xl mx-auto">
-        <div className="flex items-baseline gap-3">
+    <main className="h-screen overflow-hidden bg-green-800 text-white flex flex-col p-2 sm:p-4">
+      <div className="flex flex-wrap justify-between items-center gap-2 mb-3 max-w-4xl mx-auto w-full">
+        <div className="flex items-baseline gap-2 sm:gap-3 flex-wrap">
           <div className="flex flex-col">
-            <h1 className="text-2xl font-semibold leading-tight">Solitario</h1>
+            <h1 className="text-xl sm:text-2xl font-semibold leading-tight">
+              Solitario
+            </h1>
             <p className="text-xs text-green-200/80 italic">
               Como lo jugaba mi abuela
             </p>
           </div>
-          <span className="text-xs text-green-200/70 font-mono">
+          <span className="hidden sm:inline text-xs text-green-200/70 font-mono">
             #{history.seed.toString(16).padStart(8, "0")} ·{" "}
             {history.moves.length} movs
             {lastMove && ` · ${describeMove(lastMove)}`}
           </span>
         </div>
-        <div className="flex gap-3 items-center">
-          <label className="flex items-center gap-1 text-sm select-none cursor-pointer">
+        <div className="flex gap-2 sm:gap-3 items-center text-sm">
+          <label className="flex items-center gap-1 select-none cursor-pointer">
             <input
               type="checkbox"
               checked={highlightSafe}
               onChange={(e) => setHighlightSafe(e.target.checked)}
             />
-            Resaltar seguras
+            <span className="hidden sm:inline">Resaltar seguras</span>
+            <span className="sm:hidden">Seguras</span>
           </label>
           <button
             onClick={onUndo}
             disabled={history.moves.length === 0}
-            className="px-3 py-1 rounded bg-green-700 hover:bg-green-600 border border-green-500 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="px-2 sm:px-3 py-1 rounded bg-green-700 hover:bg-green-600 border border-green-500 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             Deshacer
           </button>
           <button
             onClick={onNewGame}
-            className="px-3 py-1 rounded bg-green-700 hover:bg-green-600 border border-green-500"
+            className="px-2 sm:px-3 py-1 rounded bg-green-700 hover:bg-green-600 border border-green-500"
           >
-            Nuevo juego
+            Nuevo
           </button>
         </div>
       </div>
