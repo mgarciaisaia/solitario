@@ -77,7 +77,7 @@ export default function App() {
               Como lo jugaba mi abuela
             </p>
           </div>
-          <span className="hidden sm:inline text-xs text-green-200/70 font-mono">
+          <span className="text-xs text-green-200/70 font-mono">
             #{history.seed.toString(16).padStart(8, "0")} ·{" "}
             {history.moves.length} movs
             {lastMove && ` · ${describeMove(lastMove)}`}
