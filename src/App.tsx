@@ -54,6 +54,9 @@ export default function App() {
   function onUndo() {
     setHistory((h) => ({ ...h, moves: h.moves.slice(0, -1) }));
   }
+  function onRestart() {
+    setHistory((h) => ({ ...h, moves: [] }));
+  }
   function onNewGame() {
     setHistory({ seed: randomSeed(), moves: [] });
   }
@@ -94,6 +97,13 @@ export default function App() {
             className="px-2 sm:px-3 py-1 rounded bg-green-700 hover:bg-green-600 border border-green-500 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             Deshacer
+          </button>
+          <button
+            onClick={onRestart}
+            disabled={history.moves.length === 0}
+            className="px-2 sm:px-3 py-1 rounded bg-green-700 hover:bg-green-600 border border-green-500 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            Reiniciar
           </button>
           <button
             onClick={onNewGame}
