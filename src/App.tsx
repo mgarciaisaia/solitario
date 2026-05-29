@@ -55,9 +55,11 @@ export default function App() {
     setHistory((h) => ({ ...h, moves: h.moves.slice(0, -1) }));
   }
   function onRestart() {
+    if (!window.confirm("¿Reiniciar la partida actual?")) return;
     setHistory((h) => ({ ...h, moves: [] }));
   }
   function onNewGame() {
+    if (history.moves.length > 0 && !window.confirm("¿Empezar una partida nueva?")) return;
     setHistory({ seed: randomSeed(), moves: [] });
   }
 
