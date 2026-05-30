@@ -3,6 +3,7 @@ import {
   applyMove,
   describeMove,
   formatMoves,
+  isSafe,
   parseMoves,
   randomSeed,
   replay,
@@ -10,12 +11,21 @@ import {
 } from "./game";
 import { Board } from "./components/Board";
 
-type History = { seed: number; moves: Move[] };
+type HistoryEntry = { move: Move; auto: boolean };
+type History = { seed: number; entries: HistoryEntry[] };
+
+type SafeMode = "off" | "highlight" | "auto";
+
+const SAFE_MODES: { value: SafeMode; label: string }[] = [
+  { value: "off", label: "No" },
+  { value: "highlight", label: "Resaltar" },
+  { value: "auto", label: "Auto" },
+];
 
 function encodeHistory(h: History): string {
   const seed = h.seed.toString(16).padStart(8, "0");
-  if (h.moves.length === 0) return `seed=${seed}`;
-  return `seed=${seed}&moves=${formatMoves(h.moves)}`;
+  if (h.entries.length === 0) return `seed=${seed}`;
+  return `seed=${seed}&moves=${formatMoves(h.entries.map((e) => e.move))}`;
 }
 
 function decodeHistory(hash: string): History | null {
@@ -25,15 +35,41 @@ function decodeHistory(hash: string): History | null {
   const seed = parseInt(seedStr, 16);
   if (!Number.isFinite(seed)) return null;
   const movesStr = params.get("moves") ?? "";
-  return { seed, moves: parseMoves(movesStr) };
+  return {
+    seed,
+    entries: parseMoves(movesStr).map((move) => ({ move, auto: false })),
+  };
+}
+
+function findSafeAutoMove(state: ReturnType<typeof replay>): Move | null {
+  const wasteTop = state.waste[state.waste.length - 1];
+  if (wasteTop && isSafe(state.foundations, wasteTop)) {
+    return {
+      kind: "move",
+      src: { kind: "waste" },
+      tgt: { kind: "foundations" },
+    };
+  }
+  for (let col = 0; col < state.columns.length; col++) {
+    const cards = state.columns[col];
+    const top = cards[cards.length - 1];
+    if (top && top.faceUp && isSafe(state.foundations, top)) {
+      return {
+        kind: "move",
+        src: { kind: "column", col },
+        tgt: { kind: "foundations" },
+      };
+    }
+  }
+  return null;
 }
 
 export default function App() {
   const [history, setHistory] = useState<History>(() => {
     const fromHash = decodeHistory(window.location.hash);
-    return fromHash ?? { seed: randomSeed(), moves: [] };
+    return fromHash ?? { seed: randomSeed(), entries: [] };
   });
-  const [highlightSafe, setHighlightSafe] = useState(false);
+  const [safeMode, setSafeMode] = useState<SafeMode>("off");
 
   useEffect(() => {
     const hash = "#" + encodeHistory(history);
@@ -43,27 +79,50 @@ export default function App() {
   }, [history]);
 
   const state = useMemo(
-    () => replay(history.seed, history.moves),
-    [history.seed, history.moves],
+    () => replay(history.seed, history.entries.map((e) => e.move)),
+    [history.seed, history.entries],
   );
+
+  useEffect(() => {
+    if (safeMode !== "auto" || state.won) return;
+    const safeMove = findSafeAutoMove(state);
+    if (!safeMove) return;
+    const timer = window.setTimeout(() => {
+      setHistory((h) => ({
+        ...h,
+        entries: [...h.entries, { move: safeMove, auto: true }],
+      }));
+    }, 350);
+    return () => window.clearTimeout(timer);
+  }, [state, safeMode]);
 
   function onMove(m: Move) {
     if (!applyMove(state, m)) return;
-    setHistory((h) => ({ ...h, moves: [...h.moves, m] }));
+    setHistory((h) => ({
+      ...h,
+      entries: [...h.entries, { move: m, auto: false }],
+    }));
   }
   function onUndo() {
-    setHistory((h) => ({ ...h, moves: h.moves.slice(0, -1) }));
+    setHistory((h) => {
+      const entries = h.entries.slice();
+      while (entries.length > 0 && entries[entries.length - 1].auto) {
+        entries.pop();
+      }
+      if (entries.length > 0) entries.pop();
+      return { ...h, entries };
+    });
   }
   function onRestart() {
     if (!window.confirm("¿Reiniciar la partida actual?")) return;
-    setHistory((h) => ({ ...h, moves: [] }));
+    setHistory((h) => ({ ...h, entries: [] }));
   }
   function onNewGame() {
-    if (history.moves.length > 0 && !window.confirm("¿Empezar una partida nueva?")) return;
-    setHistory({ seed: randomSeed(), moves: [] });
+    if (history.entries.length > 0 && !window.confirm("¿Empezar una partida nueva?")) return;
+    setHistory({ seed: randomSeed(), entries: [] });
   }
 
-  const lastMove = history.moves[history.moves.length - 1];
+  const lastMove = history.entries[history.entries.length - 1]?.move;
 
   return (
     <main className="h-screen overflow-hidden bg-green-800 text-white flex flex-col p-2 sm:p-4">
@@ -79,30 +138,40 @@ export default function App() {
           </div>
           <span className="text-xs text-green-200/70 font-mono">
             #{history.seed.toString(16).padStart(8, "0")} ·{" "}
-            {history.moves.length} movs
+            {history.entries.length} movs
             {lastMove && ` · ${describeMove(lastMove)}`}
           </span>
         </div>
         <div className="flex gap-2 sm:gap-3 items-center text-sm">
-          <label className="flex items-center gap-1 select-none cursor-pointer">
-            <input
-              type="checkbox"
-              checked={highlightSafe}
-              onChange={(e) => setHighlightSafe(e.target.checked)}
-            />
-            <span className="hidden sm:inline">Resaltar seguras</span>
-            <span className="sm:hidden">Seguras</span>
-          </label>
+          <div className="flex items-center gap-1 select-none">
+            <span className="hidden sm:inline">Seguras:</span>
+            <span className="sm:hidden">Seg:</span>
+            <div className="inline-flex rounded border border-green-500 overflow-hidden">
+              {SAFE_MODES.map(({ value, label }) => (
+                <button
+                  key={value}
+                  onClick={() => setSafeMode(value)}
+                  className={`px-2 py-1 border-l border-green-500 first:border-l-0 ${
+                    safeMode === value
+                      ? "bg-green-500 text-white"
+                      : "bg-green-700 hover:bg-green-600"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
           <button
             onClick={onUndo}
-            disabled={history.moves.length === 0}
+            disabled={history.entries.length === 0}
             className="px-2 sm:px-3 py-1 rounded bg-green-700 hover:bg-green-600 border border-green-500 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             Deshacer
           </button>
           <button
             onClick={onRestart}
-            disabled={history.moves.length === 0}
+            disabled={history.entries.length === 0}
             className="px-2 sm:px-3 py-1 rounded bg-green-700 hover:bg-green-600 border border-green-500 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             Reiniciar
@@ -115,7 +184,11 @@ export default function App() {
           </button>
         </div>
       </div>
-      <Board state={state} onMove={onMove} highlightSafe={highlightSafe} />
+      <Board
+        state={state}
+        onMove={onMove}
+        highlightSafe={safeMode === "highlight"}
+      />
       {state.won && (
         <div className="text-center mt-6 text-3xl font-bold">¡Ganaste!</div>
       )}
