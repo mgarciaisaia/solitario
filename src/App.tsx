@@ -166,55 +166,59 @@ export default function App() {
             {lastMove && ` · ${describeMove(lastMove)}`}
           </span>
         </div>
-        <div className="flex gap-2 sm:gap-3 items-center text-sm">
-          <div className="flex items-center gap-1 select-none">
-            <span className="hidden sm:inline">Seguras:</span>
-            <span className="sm:hidden">Seg:</span>
-            <div className="inline-flex rounded border border-green-500 overflow-hidden">
-              {SAFE_MODES.map(({ value, label }) => (
-                <button
-                  key={value}
-                  onClick={() => setSafeMode(value)}
-                  className={`px-2 py-1 border-l border-green-500 first:border-l-0 ${
-                    safeMode === value
-                      ? "bg-green-500 text-white"
-                      : "bg-green-700 hover:bg-green-600"
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
+        <div className="flex flex-col items-end gap-2 text-sm">
+          <div className="flex gap-2 sm:gap-3 items-center">
+            <div className="flex items-center gap-1 select-none">
+              <span className="hidden sm:inline">Seguras:</span>
+              <span className="sm:hidden">Seg:</span>
+              <div className="inline-flex rounded border border-green-500 overflow-hidden">
+                {SAFE_MODES.map(({ value, label }) => (
+                  <button
+                    key={value}
+                    onClick={() => setSafeMode(value)}
+                    className={`px-2 py-1 border-l border-green-500 first:border-l-0 ${
+                      safeMode === value
+                        ? "bg-green-500 text-white"
+                        : "bg-green-700 hover:bg-green-600"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
             </div>
+            <label className="flex items-center gap-1 select-none cursor-pointer">
+              <input
+                type="checkbox"
+                checked={highlightNext}
+                onChange={(e) => setHighlightNext(e.target.checked)}
+              />
+              <span className="hidden sm:inline">Próximas</span>
+              <span className="sm:hidden">Próx</span>
+            </label>
           </div>
-          <label className="flex items-center gap-1 select-none cursor-pointer">
-            <input
-              type="checkbox"
-              checked={highlightNext}
-              onChange={(e) => setHighlightNext(e.target.checked)}
-            />
-            <span className="hidden sm:inline">Próximas</span>
-            <span className="sm:hidden">Próx</span>
-          </label>
-          <button
-            onClick={onUndo}
-            disabled={history.cursor === 0}
-            className="px-2 sm:px-3 py-1 rounded bg-green-700 hover:bg-green-600 border border-green-500 disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            Deshacer
-          </button>
-          <button
-            onClick={onRestart}
-            disabled={history.entries.length === 0}
-            className="px-2 sm:px-3 py-1 rounded bg-green-700 hover:bg-green-600 border border-green-500 disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            Reiniciar
-          </button>
-          <button
-            onClick={onNewGame}
-            className="px-2 sm:px-3 py-1 rounded bg-green-700 hover:bg-green-600 border border-green-500"
-          >
-            Nuevo
-          </button>
+          <div className="flex gap-2 sm:gap-3 items-center">
+            <button
+              onClick={onUndo}
+              disabled={history.cursor === 0}
+              className="px-2 sm:px-3 py-1 rounded bg-green-700 hover:bg-green-600 border border-green-500 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Deshacer
+            </button>
+            <button
+              onClick={onRestart}
+              disabled={history.entries.length === 0}
+              className="px-2 sm:px-3 py-1 rounded bg-green-700 hover:bg-green-600 border border-green-500 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Reiniciar
+            </button>
+            <button
+              onClick={onNewGame}
+              className="px-2 sm:px-3 py-1 rounded bg-green-700 hover:bg-green-600 border border-green-500"
+            >
+              Nuevo
+            </button>
+          </div>
         </div>
       </div>
       <Board
