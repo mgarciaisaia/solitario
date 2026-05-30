@@ -144,7 +144,7 @@ function FaceDownCard({ card, top }: { card: Card; top: string }) {
 
   return (
     <div
-      className="absolute left-0 select-none"
+      className={`absolute left-0 select-none rounded-md ${peek ? "ring-2 ring-sky-400 shadow-sky-400/40" : ""}`}
       style={{
         top,
         zIndex: peek ? 10 : undefined,
@@ -185,6 +185,9 @@ function FaceDownCard({ card, top }: { card: Card; top: string }) {
       }}
     >
       <CardView card={peek ? { ...card, faceUp: true } : card} />
+      {peek && (
+        <div className="absolute inset-0 rounded-md bg-sky-400/25 pointer-events-none" />
+      )}
     </div>
   );
 }
