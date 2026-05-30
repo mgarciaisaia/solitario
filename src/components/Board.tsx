@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   DndContext,
   PointerSensor,
@@ -121,11 +121,35 @@ function DropTarget({
 
 function FaceDownCard({ card, top }: { card: Card; top: string }) {
   const [peek, setPeek] = useState(false);
-  const stopPeek = () => setPeek(false);
+  const peekFromTouchRef = useRef(false);
+  const timerRef = useRef<number | null>(null);
+  const clearTimer = () => {
+    if (timerRef.current !== null) {
+      window.clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+  };
+  const stopPeek = () => {
+    clearTimer();
+    peekFromTouchRef.current = false;
+    setPeek(false);
+  };
+
+  useEffect(() => {
+    if (!peek || !peekFromTouchRef.current) return;
+    const dismiss = () => stopPeek();
+    document.addEventListener("pointerdown", dismiss, { once: true });
+    return () => document.removeEventListener("pointerdown", dismiss);
+  }, [peek]);
+
   return (
     <div
-      className="absolute left-0"
-      style={{ top, zIndex: peek ? 10 : undefined }}
+      className="absolute left-0 select-none"
+      style={{
+        top,
+        zIndex: peek ? 10 : undefined,
+        WebkitTouchCallout: "none",
+      }}
       onContextMenu={(e) => e.preventDefault()}
       onMouseDown={(e) => {
         if (e.button === 2) {
@@ -133,8 +157,32 @@ function FaceDownCard({ card, top }: { card: Card; top: string }) {
           setPeek(true);
         }
       }}
-      onMouseUp={stopPeek}
-      onMouseLeave={stopPeek}
+      onMouseUp={() => {
+        if (!peekFromTouchRef.current) stopPeek();
+      }}
+      onMouseLeave={() => {
+        if (!peekFromTouchRef.current) stopPeek();
+      }}
+      onTouchStart={() => {
+        clearTimer();
+        timerRef.current = window.setTimeout(() => {
+          peekFromTouchRef.current = true;
+          setPeek(true);
+        }, 400);
+      }}
+      onTouchEnd={() => {
+        clearTimer();
+      }}
+      onTouchCancel={() => {
+        clearTimer();
+        if (!peekFromTouchRef.current) setPeek(false);
+      }}
+      onTouchMove={() => {
+        if (!peekFromTouchRef.current) {
+          clearTimer();
+          setPeek(false);
+        }
+      }}
     >
       <CardView card={peek ? { ...card, faceUp: true } : card} />
     </div>
