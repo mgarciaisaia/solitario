@@ -70,6 +70,7 @@ export default function App() {
     return fromHash ?? { seed: randomSeed(), entries: [] };
   });
   const [safeMode, setSafeMode] = useState<SafeMode>("off");
+  const [highlightNext, setHighlightNext] = useState(false);
 
   useEffect(() => {
     const hash = "#" + encodeHistory(history);
@@ -162,6 +163,15 @@ export default function App() {
               ))}
             </div>
           </div>
+          <label className="flex items-center gap-1 select-none cursor-pointer">
+            <input
+              type="checkbox"
+              checked={highlightNext}
+              onChange={(e) => setHighlightNext(e.target.checked)}
+            />
+            <span className="hidden sm:inline">Próximas</span>
+            <span className="sm:hidden">Próx</span>
+          </label>
           <button
             onClick={onUndo}
             disabled={history.entries.length === 0}
@@ -188,6 +198,7 @@ export default function App() {
         state={state}
         onMove={onMove}
         highlightSafe={safeMode === "highlight"}
+        highlightNext={highlightNext}
       />
       {state.won && (
         <div className="text-center mt-6 text-3xl font-bold">¡Ganaste!</div>

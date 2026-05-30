@@ -184,6 +184,15 @@ export function isSafe(
   return true;
 }
 
+export function isNextFoundationCard(
+  foundations: Record<Suit, Card[]>,
+  card: Card,
+): boolean {
+  if (!card.faceUp) return false;
+  const idx = foundations[card.suit].length;
+  return idx < RANKS.length && RANKS[idx] === card.rank;
+}
+
 export function tryMove(
   state: GameState,
   src: MoveSource,

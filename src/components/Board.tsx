@@ -10,6 +10,7 @@ import {
 } from "@dnd-kit/core";
 import {
   SUITS,
+  isNextFoundationCard,
   isSafe,
   type Card,
   type GameState,
@@ -18,6 +19,24 @@ import {
   type MoveTarget,
   type Suit,
 } from "../game";
+
+type HighlightKind = "safe" | "next";
+
+const HIGHLIGHT_RING: Record<HighlightKind, string> = {
+  safe: "rounded-md ring-2 ring-yellow-300 shadow-yellow-300/40",
+  next: "rounded-md ring-2 ring-fuchsia-400 shadow-fuchsia-400/40",
+};
+
+function topHighlight(
+  foundations: Record<Suit, Card[]>,
+  card: Card,
+  highlightSafe: boolean,
+  highlightNext: boolean,
+): HighlightKind | undefined {
+  if (highlightSafe && isSafe(foundations, card)) return "safe";
+  if (highlightNext && isNextFoundationCard(foundations, card)) return "next";
+  return undefined;
+}
 import { CARD_H, CARD_W, CardView, EmptySlot, SUIT_LABEL } from "./Card";
 
 const STACK_OFFSET = "var(--stack-offset)";
@@ -57,6 +76,7 @@ type Props = {
   state: GameState;
   onMove: (move: Move) => void;
   highlightSafe: boolean;
+  highlightNext: boolean;
 };
 
 function DraggableCard({
@@ -68,7 +88,7 @@ function DraggableCard({
   card: Card;
   source: MoveSource;
   onDoubleClick?: () => void;
-  highlight?: boolean;
+  highlight?: HighlightKind;
 }) {
   const id = useMemo(() => JSON.stringify(source), [source]);
   const { attributes, listeners, setNodeRef, transform, isDragging } =
@@ -87,9 +107,7 @@ function DraggableCard({
     <div
       ref={setNodeRef}
       style={style}
-      className={
-        highlight ? "rounded-md ring-2 ring-yellow-300 shadow-yellow-300/40" : ""
-      }
+      className={highlight ? HIGHLIGHT_RING[highlight] : ""}
       {...listeners}
       {...attributes}
       onDoubleClick={onDoubleClick}
@@ -196,10 +214,12 @@ function StackedCard({
   card,
   top,
   stripHeight,
+  highlight,
 }: {
   card: Card;
   top: string;
   stripHeight: string;
+  highlight?: HighlightKind;
 }) {
   return (
     <div
@@ -207,7 +227,7 @@ function StackedCard({
       style={{ top, width: CARD_W, height: stripHeight }}
     >
       <div
-        className="absolute top-0 left-0"
+        className={`absolute top-0 left-0 ${highlight ? HIGHLIGHT_RING[highlight] : ""}`}
         style={{ pointerEvents: "none" }}
       >
         <CardView card={card} />
@@ -222,12 +242,14 @@ function Column({
   onMove,
   foundations,
   highlightSafe,
+  highlightNext,
 }: {
   cards: Card[];
   col: number;
   onMove: (move: Move) => void;
   foundations: Record<Suit, Card[]>;
   highlightSafe: boolean;
+  highlightNext: boolean;
 }) {
   const lastIdx = cards.length - 1;
   const minHeight = `calc(${CARD_H} + ${Math.max(0, cards.length - 1)} * ${STACK_OFFSET})`;
@@ -251,9 +273,12 @@ function Column({
                     <DraggableCard
                       card={card}
                       source={{ kind: "column", col }}
-                      highlight={
-                        highlightSafe && isSafe(foundations, card)
-                      }
+                      highlight={topHighlight(
+                        foundations,
+                        card,
+                        highlightSafe,
+                        highlightNext,
+                      )}
                       onDoubleClick={() =>
                         onMove({
                           kind: "move",
@@ -277,6 +302,11 @@ function Column({
                 card={card}
                 top={top}
                 stripHeight={STACK_OFFSET}
+                highlight={
+                  highlightNext && isNextFoundationCard(foundations, card)
+                    ? "next"
+                    : undefined
+                }
               />
             );
           })}
@@ -325,11 +355,13 @@ function Waste({
   onMove,
   foundations,
   highlightSafe,
+  highlightNext,
 }: {
   waste: Card[];
   onMove: (move: Move) => void;
   foundations: Record<Suit, Card[]>;
   highlightSafe: boolean;
+  highlightNext: boolean;
 }) {
   if (waste.length === 0) return <EmptySlot label="—" />;
   const lastIdx = waste.length - 1;
@@ -348,7 +380,12 @@ function Waste({
               <DraggableCard
                 card={card}
                 source={{ kind: "waste" }}
-                highlight={highlightSafe && isSafe(foundations, card)}
+                highlight={topHighlight(
+                  foundations,
+                  card,
+                  highlightSafe,
+                  highlightNext,
+                )}
                 onDoubleClick={() =>
                   onMove({
                     kind: "move",
@@ -366,6 +403,11 @@ function Waste({
             card={card}
             top={top}
             stripHeight={stripHeights[i]}
+            highlight={
+              highlightNext && isNextFoundationCard(foundations, card)
+                ? "next"
+                : undefined
+            }
           />
         );
       })}
@@ -398,7 +440,7 @@ function Stock({
   );
 }
 
-export function Board({ state, onMove, highlightSafe }: Props) {
+export function Board({ state, onMove, highlightSafe, highlightNext }: Props) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
   );
@@ -428,6 +470,7 @@ export function Board({ state, onMove, highlightSafe }: Props) {
               onMove={onMove}
               foundations={state.foundations}
               highlightSafe={highlightSafe}
+              highlightNext={highlightNext}
             />
           ))}
         </div>
@@ -445,6 +488,7 @@ export function Board({ state, onMove, highlightSafe }: Props) {
               onMove={onMove}
               foundations={state.foundations}
               highlightSafe={highlightSafe}
+              highlightNext={highlightNext}
             />
           </div>
         </div>
